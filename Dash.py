@@ -6,6 +6,22 @@ import pandas as pd
 import plotly.graph_objs as go
 import mat4py
 from SupportFunctions import *
+from flask import Flask, request
+import git
+
+app = Flask(__name__)
+
+@app.route('/webhook', methods=['POST'])
+def webhook():
+    if request.method == 'POST':
+        repo = git.Repo('./myproject')
+        origin = repo.remotes.origin
+        repo.create_head('master',
+    origin.refs.master).set_tracking_branch(origin.refs.master).checkout()
+        origin.pull()
+        return '', 200
+    else:
+        return '', 400
 
 path = r'C:\Host Online'
 
@@ -39,13 +55,13 @@ server = app.server #app server to deploy the app locally.
 dd_options_PitchAngle = create_value_label_for_dropdown(['0 deg', '1 deg'], [0, 1]) #create_value... function in SupportFunctions.py #drop down options for pitch misalignemnt angles
 dd_options_xy = create_value_label_for_dropdown(DfHeaders, DfHeaders) #drop down options for x and y values
 app.layout = html.Div([                                             #html layout of the app. Verrry similar to standard html components
-    html.Div([html.H1('Pitch Misalignment Simulator',style = {'display':'block'}),
+    html.Div([html.H1('Wind Turbine Pitch Misalignment Simulator',style = {'display':'block'}),
               html.P('Welcome to the pitch misalignemnt simulator!', style={'display': 'block'}),
               html.P('Here you can visualize the behaviour of a wind turbine under pitch misalignemnt of one of the blades. '
                      'The turbine used here is the DTU 10MW reference turbine. The results you see here are from a '
                      'database of HAWC2 simulation results. If you wish to know more about the simulations, '
                      'get the data or wish to contribute, please send an email to onerevatatime@gmail.com', style={'display': 'block'}),
-              html.P('This webpage is still under developement. Options to simulate more pitch misalignment angles, different levels of turbulence,'
+              html.P('This webpage is still under developement. Options to simulate more pitch misalignment angles, more wind speeds, different levels of turbulence,'
                      'different levels of shear etc. will be added. If you would like to notify errors, wishes for features or wish to contribute, '
                     'please send an email to onerevatatime@gmail.com',style = {'display':'block'})]),
 
