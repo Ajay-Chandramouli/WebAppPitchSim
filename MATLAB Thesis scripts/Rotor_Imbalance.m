@@ -1,17 +1,31 @@
+%This code is to generate statistics of different load channels for
+%different levels of simulated rotor imbalance. 
+
+%Terminology is as usual - MXYZ means Mass imbalance level X in blade 1, Y
+%in balde 2, Z in blade 3. PXYZ means Pitch imbalance is level X in blade
+%1, Y in blade 2, Z in blade 3.
+
 clear
-%clc
+clc
 rho = 1.225;
 R = 178/2;
 A = pi*R^2;
 Wsp.Vo = [4;6;8;10;12;14;16;18;20;22;24];
-%%
+%% If the results file has already been generated, this section will just load the results file and add some extra necessary columns.
+%If the results file has not been generatedm this section cannot be run and
+%the below sections need to be run to generate the results table.
+
 load('Rotor_Imb_Results.mat')
 ResultTable.sinc_NAcx = ResultTable.P1_NAcx./24000;
 ResultTable.cosc_NAcx = ResultTable.P1_NAcx./24000;
 ResultTable.sinc_NAcx = ResultTable.P1_NAcx./24000;
 ResultTable.cosc_NAcy = ResultTable.P1_NAcx./24000;
-%%
-MLevel = {'M000';'M100';'M200';'M300';'M400';'M500'};
+%% Input options to generate a new results (fault simulations) table 'Rotor_Imb_results'.
+%If it has already been generated, it can be loaded in the previous section and this section can be skipped
+% Results from the '.stat' binary files  from the simulations will be grouped and stored in this file. 
+%Results of a single binary file can be read using the script 'readstatfile.m'
+
+ MLevel = {'M000';'M100';'M200';'M300';'M400';'M500'};
 P1Level = {'P000';'P100';'P200';'P300';'P400';'P500';'P0_500';'P1_500'};
 P2Level = {'P010';'P030'};
 MValues = [0 0.5 2 4 5.5 6.8];
@@ -26,7 +40,6 @@ end
 for P2 = 1:length(P2Level)
     ResultTable.PitchImb2(strcmp(ResultTable.PLevel,P2Level{P2}))=P2Values(P2);
 end
-%% user input
 TSLevels = {'T1_S1';'T1_S2';'T2_S1';'T2_S2'};
 TSValues = {'TI=0.12,S=0.2';'TI=0.12,S=0.1';'TI=0.12,S=0.2';'TI=0.12,S=0.1'};
 ShearValues = [0.2 0.1 0.2 0.1];
@@ -34,8 +47,8 @@ ShearValues = [0.2 0.1 0.2 0.1];
 % PLevel = {'P000';'P100';'P200';'P300';'P400';'P500';'P010';'P030';'P050';};
 MLevel = {'M100'};
 PLevel = {'P030'};
+
 j=0;
-%load('Rotor_Imb_results.mat')
 ResultTable1 = [];
 for TS = 1:length(TSLevels)
     z=[];
