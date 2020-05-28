@@ -53,7 +53,7 @@ dd_options_PitchAngle = create_value_label_for_dropdown(['0 deg', '1 deg','3 deg
 dd_options_xy = create_value_label_for_dropdown(DfHeadersDesc, DfHeaders) #drop down options for x and y values
 r_options_PSD_yaxis = create_value_label_for_dropdown(['Linear','Log'],['linear','log'])
 dd_options_Wsp = create_value_label_for_dropdown(['10m/s', '12m/s','14m/s','16m/s','20m/s'],[10,12,14,16,20])
-dd_options_Seed_Info = create_value_label_for_dropdown(['Yes','No'],[1,0])
+dd_options_Seed_Info = create_value_label_for_dropdown(['Yes','No','Success'],[1,0,1])
 
 image_filename = path + '//'+ 'DTU10MWresized.png'
 encoded_image = base64.b64encode(open(image_filename, 'rb').read())
