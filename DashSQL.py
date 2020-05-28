@@ -4,44 +4,35 @@ import dash_core_components as dcc
 import dash_html_components as html
 import pandas as pd
 import plotly.graph_objs as go
-import mat4py
 from SupportFunctions import *
 import json
-import socket
 import base64
+from sqlalchemy import create_engine
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css'] #A nice stylesheet!
+
+Servers= {'Local' :dict(host = 'localhost',user = 'root', pwd = 'usausb12',database = 'PitchMisalignment'),
+               'Azure': dict(host = 'windturbinefaultsaz.mysql.database.azure.com',user = 'chandramouli@windturbinefaultsaz',
+                             pwd = 'Parsyd123',database = 'PitchMisalignment')}
+#Haha using both syntaxes to create a dictionary
+
+ServerType = 'Azure'
+SQLServer = Servers[ServerType]
+
+engine = create_engine('mysql+mysqlconnector://{user}:{pwd}@{host}/{database}'
+                       .format(user=SQLServer['user'], pwd=SQLServer['pwd'], host=SQLServer['host'], database=SQLServer['database']))
+
+
 #Now we move on to the app, created using Dash!
-app = dash.Dash(__name__, external_stylesheets=external_stylesheets)#
+app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 server = app.server #app server to deploy the app locally.
-if socket.gethostname() == 'Chandramouli':
-    path = r'C:\Host Online'
-else:
-    path = '/home/chandramouli/'
+path = r'C:\Host Online'
 
 #The data is arranged in such a way that each simulation case is a .mat file from MATLAB.
 # Each simulation case corresponds to one particular wind speed. turbulence level and one fault scenario (pitch misalignment etc).
 # If any of these changes, it becomes a new simulation case.
 # Each .mat file contains the turbine response (rot. speed, thrust, power etc) of that particular simulation
 
-#first we would like to load the necessary .mat files and store them as dataframes. The collection of these dataframes is stored in a dictionary
-# 'MainDict'. From this dict, based on the user input in the dashboard, relevant df will be chosen and worked upon.
-"""
-global MainDict #Declaring as global variable helps in live debugging
-CaseOrder = ['NoTurbPitch0', 'NoTurbPitch1', 'Turb1Pitch0', 'Turb1Pitch1'] #No Turb - No Turbulence; Turb1 - Turbulency level 1, Pitchx - Pitch angle x deg
-CaseNames = ['M000P000_T0_S4_Wsp10', 'M000P100_T0_S4_Wsp10', 'M000P000_T1_S1_Wsp10', 'M000P100_T1_S1_Wsp10'] #MATLAB file name follwed during execution of thesis.
-MainDict = {}
-DfHeaders = open(path + '//' + 'Headers.txt', 'r').read().splitlines() #Names of the .mat columns
-DfHeadersDesc = open(path + '//' + 'HeadersDescription.txt', 'r').read().splitlines() #Descriptions of the .mat columns
-DfHeadersUnits = open(path + '//' + 'HeadersUnits.txt', 'r').read().splitlines() #Units of the .mat columns
-for n, Case in enumerate(CaseNames):
-    temp = mat4py.loadmat(path + '\\' + Case + '.mat') #mat4py - load .mat to python
-    MainDict[CaseOrder[n]] = pd.DataFrame.from_dict(temp['sig'])
-    if Case[9:11] == 'T0':
-        MainDict[CaseOrder[n]].columns = DfHeaders[:-1] #because for T0 (NoTurb), there is no 'EqWsp' column.
-    else:
-        MainDict[CaseOrder[n]].columns = DfHeaders
-"""
 DfHeaders = open(path + '//' + 'Headers.txt', 'r').read().splitlines()  # Names of the .mat columns
 DfHeadersDesc = open(path + '//' + 'HeadersDescription.txt',
                      'r').read().splitlines()  # Descriptions of the .mat columns
@@ -58,7 +49,7 @@ dd_options_Seed_Info = create_value_label_for_dropdown(['Yes','No'],[1,0])
 image_filename = path + '//'+ 'DTU10MWresized.png'
 encoded_image = base64.b64encode(open(image_filename, 'rb').read())
 
-app.layout = html.Div([                                             #html layout of the app. Verrry similar to standard html components
+app.layout = html.Div([                                             #html layout of the app. Dash html components are Verrry similar to standard html components
     html.Div([html.H1(Text['Main Heading'],style = {'display':'block'}),
               html.P(Text['Bold Welcome'], style={'display': 'block','font-weight':'bold'}),
               html.P(Text['What is pitch misalignment']),
@@ -79,30 +70,11 @@ app.layout = html.Div([                                             #html layout
               html.P('Imbalance - Effect and Detection',style = {'font-weight':'bold'}),
               html.P(Text['Imbalance Description'])
               ]),
-              #html.P('Let\'s get started!', style={'display': 'block','font-weight':'bold'}),
-    html.Div([#html.H4('No Pitch Misalignment'),
-        #html.P(Text['No misalignment block']),
-#html.P('Let\'s get started!', style={'display': 'block','font-weight':'bold'}),
-        #html.P(Text['PSD plot description'])
-        ]),
 
-    # html.Div([html.H2('No Turbulence'),
-    #           html.P('Enter the two values of the misalignment you wish to analyse in the boxes below'),
-    #           dcc.Dropdown(id='NoTurbPitch1', options=dd_options_PitchAngle
-    #                        , value='0 deg', style={'width': '50%', 'display': 'inline-block'}),
-    #           dcc.Dropdown(id='NoTurbPitch2', options=dd_options_PitchAngle
-    #                        , value='0 deg', style={'width': '50%', 'display': 'inline-block'}),
-    #           html.P('Enter the x and y variables you wish to visualize in the text boxes below'),
-    #           html.P('x:'),
-    #           dcc.Dropdown(id='NoTurbxdd', options=dd_options_xy
-    #                        , value='Time', style={'width': '50%'}),
-    #           html.P('y:'),
-    #           dcc.Dropdown(id='NoTurbydd', options=dd_options_xy
-    #                        , value='Theta', style={'width': '50%'}),
-    #           dcc.Graph(id='xyNoTurb')], style={'width': '45%', 'display': 'inline-block'}),
+    html.Div([ ]),
 
-    html.Div([#html.H4(Text['TI and wind conditions description']),
-              html.H4('Let\'s get started!'),
+
+    html.Div([html.H4('Let\'s get started!'),
               html.P(Text['Scenario description'], style={'display': 'block'}),
               html.P(Text['Enter values and description']),
               html.P('Scenario 1:',style={'display':'inline-block','margin-right': '15px'}),
@@ -135,65 +107,35 @@ app.layout = html.Div([                                             #html layout
               , style={'width': '100%', 'display': 'block'}),
 
     html.Div([ html.H5('Power Spectral Density'),
-        #html.P( Text['PSD plot description']),
         html.P('Y axis type: ',style={'display':'inline-block','margin-right': '15px'}),
         dcc.RadioItems(id='PSDTurbaxis-type', options=r_options_PSD_yaxis,
                 value='log', labelStyle={'display': 'inline-block'},style={'display':'inline-block'}),
         #html.Button('Update PSD', id='PSDButtonTurb',n_clicks=1),
-        dcc.Graph(id='PSDTurb',style={'width':'100%'})],style={'width': '100%', 'display': 'inline-block'}),
-
-    html.Div([html.H5 ('References'),
-              html.P(Text['References'])])
+        dcc.Graph(id='PSDTurb',style={'width':'100%'})],style={'width': '100%', 'display': 'inline-block'})
 ])
 
 @app.callback([Output('MainDict','children'),Output('Loading2','children')],[Input('TurbPitch1','value'), Input('TurbPitch2','value'),
                                              Input('Turbxdd', 'value'), Input('Turbydd', 'value'),Input('Wsp','value'),
                                                 Input('SeedInfo','value')])
-def dynamic_load(Pitch1,Pitch2,Turbxdd,Turbydd,Wsp,SeedInfo):
-    Seed1,Seed2 = (1,1) if SeedInfo ==1 else (1,0)
-    CaseNames = ['M000P'+str(Pitch1)+'00_T1_S1_Wsp'+str(Wsp)+'_s'+str(Seed1),'M000P'+str(Pitch2)+'00_T1_S1_Wsp'+str(Wsp)+'_s'+str(Seed2)]
-    CaseOrder = ['Turb1Pitch'+str(Pitch1),'Turb1Pitch'+str(Pitch2)]
+def dynamic_load(PitchLevel1,PitchLevel2,Turbxdd,Turbydd,Wsp,SeedInfo):
+    Seed = (1,1) if SeedInfo ==1 else (1,0)
     Dict = {}
     MainDict={}
-    for n, Case in enumerate(CaseNames):
-        temp = mat4py.loadmat(path + '\\' + Case + '.mat')  # mat4py - load .mat to python
-        Dict[CaseOrder[n]] = pd.DataFrame.from_dict(temp['sig'])
-        if Case[9:11] == 'T0':
-            Dict[CaseOrder[n]].columns = DfHeaders[:-1]  # because for T0 (NoTurb), there is no 'EqWsp' column.
-        else:
-            Dict[CaseOrder[n]].columns = DfHeaders
-        list = GetUniqueinList([Turbxdd,Turbydd,'Time','Vo','Omega']) #Time, Omega and Vo are always needed because of the input V figure and PSD
-        Dict[CaseOrder[n]] = Dict[CaseOrder[n]][list]
+    Colslist = GetUniqueinList([Turbxdd, Turbydd, 'Time', 'Vo', 'Omega'])  # Time, Omega and Vo are always needed because of the input V figure and PSD
+    for n, Cols in enumerate(Colslist):
+        ColslistStr = Cols if n == 0 else ColslistStr + ',' + Cols
+    CaseOrder = ['Turb1Pitch'+str(PitchLevel1),'Turb1Pitch'+str(PitchLevel2)]
+
+    for n,PitchLevel in enumerate([PitchLevel1,PitchLevel2]):
+        PitchAngle = 3 if PitchLevel==2 else PitchLevel
+        dbtable = 'deg' + str(PitchAngle)  # Database table to be connected to
+        SQLQuery = 'SELECT {} FROM {} WHERE Wsp = %s AND Seed = %s '.format(ColslistStr,dbtable)  # SQL query to be executed
+        Dict[CaseOrder[n]]  = pd.read_sql(SQLQuery, con=engine, params=(Wsp, Seed[n]))  # executing the query in MySQL
     for key in Dict.keys():
          MainDict[key] = Dict[key].to_json(orient='split')
 
     return json.dumps(MainDict),[]
 
-"""
-#calling using the decorator helps extend the functionality of the callback function temporarily
-# XY figure for No Turb
-@app.callback(Output('xyNoTurb', 'figure'), [Input('NoTurbPitch1', 'value'), Input('NoTurbPitch2', 'value'),
-                                             Input('NoTurbxdd', 'value'), Input('NoTurbydd', 'value')])
-def update_graph(NoTurbChosenPitch1, NoTurbChosenPitch2, NoTurbChosenxdd, NoTurbChosenydd):
-    df1 = MainDict['NoTurbPitch' + str(NoTurbChosenPitch1)]
-    df2 = MainDict['NoTurbPitch' + str(NoTurbChosenPitch2)]
-
-
-    figure = {'data': [go.Scatter(
-        y=df1[NoTurbChosenydd],
-        x=df1[NoTurbChosenxdd], name=str(NoTurbChosenPitch1) + ' deg'), #first trace (curve) of the graph
-        go.Scatter(
-            y=df2[NoTurbChosenydd],
-            x=df2[NoTurbChosenxdd], name=str(NoTurbChosenPitch2) + ' deg')], #Second trace (curve) of the graph
-        'layout': go.Layout(
-            yaxis=dict(automargin=True),
-            title=NoTurbChosenxdd + ' vs ' + NoTurbChosenydd,
-            xaxis_title=NoTurbChosenxdd,
-            yaxis_title=NoTurbChosenydd
-        )
-    }
-    return figure
-"""
 
 # Input V figure for Turb
 @app.callback(Output('InputTurb', 'figure'), [Input('TurbPitch1', 'value'), Input('TurbPitch2', 'value'),
@@ -253,29 +195,6 @@ def update_graph(TurbChosenPitch1, TurbChosenPitch2, TurbChosenxdd, TurbChosenyd
     }
     return figure
 
-"""
-# PSD for No Turb  plot
-@app.callback(Output('PSDNoTurb', 'figure'), [Input('NoTurbPitch1', 'value'), Input('NoTurbPitch2', 'value'),
-                                              Input('NoTurbydd', 'value'),Input('MainDict','children')])
-def update_graph(NoTurbChosenPitch1, NoTurbChosenPitch2, NoTurbChosenydd,MainDict):
-    df1 = MainDict['NoTurbPitch' + str(NoTurbChosenPitch1)]
-    df2 = MainDict['NoTurbPitch' + str(NoTurbChosenPitch2)]
-    f1, PSD1 = CalcPSD(df1['Time'], df1[NoTurbChosenydd], 0.025)  # delta t is 0.025s always
-    f2, PSD2 = CalcPSD(df2['Time'], df2[NoTurbChosenydd], 0.025)  # delta t is 0.025s always
-    omega1, omega2 = df1['Omega'].mean() / (2 * np.pi), df2['Omega'].mean() / (2 * np.pi)
-    figure = {'data': [go.Scatter(y=PSD1, x=f1, name=str(NoTurbChosenPitch1) + ' deg'),  #PSD of 1st y value in XY plot
-                       go.Scatter(y=PSD2, x=f2, name=str(NoTurbChosenPitch2) + ' deg'),  #PSD of 2nd y value in XY plot
-                       go.Scatter(y=[PSD2.min(), PSD2.max()], x=[omega1, omega1],        #vertical line to indicate avg. 1P frequency
-                                  name = 'Av. 1P freq ',line={'dash':'dash'})],
-              'layout': go.Layout(yaxis=dict(automargin = True),
-                                  xaxis = dict(range = [f1[1],1]),
-                                  title='PSD of ' + NoTurbChosenydd,
-                                  xaxis_title='Frequency [Hz]',
-                                  yaxis_title='PSD of ' + NoTurbChosenydd + '[Units^2 / Hz]',
-                                  yaxis_type='log',
-                                  annotations=[dict(x=omega1 * 0.95, y=PSD1.max() * 0.35, text='1P', textangle=-90)])}
-    return figure
-"""
 
 # PSD of the Turbulent XY plot.
 @app.callback(Output('PSDTurb', 'figure'), [Input('TurbPitch1', 'value'), Input('TurbPitch2', 'value'),
@@ -288,7 +207,6 @@ def update_graph(TurbChosenPitch1, TurbChosenPitch2, TurbChosenydd,MainDict1,Axi
     idx_y = IndicesinList(DfHeaders,TurbChosenydd)[0]
     TurbChosenyddLabel = DfHeadersDesc[idx_y]
     TurbChosenyddUnits = DfHeadersUnits[idx_y]
-    #AxisType = 'linear' if AxisType == 'Linear' else 'log'
     f1, PSD1 = CalcPSD(df1['Time'], df1[TurbChosenydd], 0.025)  # delta t is 0.025s always
     f2, PSD2 = CalcPSD(df2['Time'], df2[TurbChosenydd], 0.025)  # delta t is 0.025s always
     omega1, omega2 = df1['Omega'].mean() / (2 * np.pi), df2['Omega'].mean() / (2 * np.pi)
@@ -305,11 +223,7 @@ def update_graph(TurbChosenPitch1, TurbChosenPitch2, TurbChosenydd,MainDict1,Axi
                                   xaxis_title='Frequency [Hz]',
                                   yaxis_title='PSD ' + '[('+ TurbChosenyddUnits[1:-1]+')' + '<sup>2</sup>' + '/Hz]',
                                   yaxis_type=AxisType)}
-                                  #,annotations=[dict(x=omega1 * 0.95, y=PSD1.max() * 0.35, text='1P', textangle=-90)])}
     return figure
-
-# Loading screen CSS
-app.css.append_css({"external_url": "https://codepen.io/chriddyp/pen/brPBPO.css"})
 
 #app.run_server()
 if __name__ == '__main__':

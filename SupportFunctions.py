@@ -1,8 +1,6 @@
-import pandas as pd
-import mat4py
-import matplotlib.pyplot as plt
-import scipy.signal as sc
 import numpy as np
+import dash_html_components as html
+
 #Function to calculate the Power Spectral Density (PSD) of a timeseries.
 def CalcPSD(t,timeseries,deltat):
     fFFT = np.fft.rfftfreq(len(t),deltat)
@@ -10,6 +8,7 @@ def CalcPSD(t,timeseries,deltat):
     a = abs(np.fft.fft(timeseries)) / len(timeseries)
     PSD = 2 * a ** 2 / dfFFT
     PSD=PSD[:len(fFFT)]
+    PSD[0] = 0
     return fFFT,PSD
 
 #This function is used to create value-label pairs for the dropdown options. Output is a list of value-label pairs.
@@ -19,35 +18,69 @@ def create_value_label_for_dropdown(label_list, value_list):
         dictlist.append({'value': value_list[n], 'label': label})
     return dictlist
 
-"""
-path = r'C:\\Host Online'
-df = mat4py.loadmat(path + '\\'+ 'M000P100_T1_S1_Wsp10.mat')
-#path = r'E:\Thesis backup 27 Sep\Thesis\Process results\Ensemble Averages'
-#df = mat4py.loadmat(path + '\\'+ 'Ensembled M000P100 T1_S1 Wsp10.mat')
-df = pd.DataFrame.from_dict(df['sig'])
-#df = pd.DataFrame.from_dict(df['Result1'])
-#Cols = open(path + '\\' + 'ColumnNumbers.txt','r').read().splitlines()
-#Cols= [int(i)-1 for i in Cols]
-#df = df.iloc[:,Cols]
-df.columns = open(path + '\\' + 'Headers.txt','r').read().splitlines()
-sig = df['NAcx']
-#sig = np.sin(4*np.pi*df['Time'])
-f,PSD = CalcPSD(df['Time'],sig,0.025)
-plt.figure()
-plt.semilogy(f,PSD)
-#plt.vlines(df['Omega'].mean() * 2 *np.pi/60,PSD.min(),PSD.max())
-plt.vlines([1*df['Omega'].mean()/(2*np.pi),2*df['Omega'].mean()/(2*np.pi),3*df['Omega'].mean()/(2*np.pi)],PSD.min(),PSD.max())
-plt.xlim([0,1])
-plt.grid(True)
-plt.show()
+#This function is used to get the indices corresponding to an item in a list containing strings
+def IndicesinList(list,item):
+    i = [i for i,x in enumerate(list) if x.strip()==item.strip()] #strictly only for strings, for integers use np.where
+    return i
 
-ff,PSDS = sc.welch(sig,40,sc.hamming(len(sig)),noverlap=len(sig)/2,return_onesided=True)
-#plt.figure()
-plt.semilogy(ff,PSDS)
-#plt.vlines(df['Omega'].mean() * 2 *np.pi/60,PSD.min(),PSD.max())
-plt.vlines([1*df['Omega'].mean()/(2*np.pi),2*df['Omega'].mean()/(2*np.pi),3*df['Omega'].mean()/(2*np.pi)],PSD.min(),PSD.max())
-plt.xlim([0,1])
-plt.ylabel('Welch')
-plt.grid(True)
-plt.show()
+#This function is used to get unique elements in a list
+def GetUniqueinList(list):
+    unique_list = []
+    for x in list:     # traverse overall elements
+        # check if exists in unique_list or not
+        if x not in unique_list:
+            unique_list.append(x)
+
+    return unique_list
+
 """
+Custom function to read text for the app from a text file. In the text file, the text is written as:
+ *
+ Heading 1 
+ Text to be displayed
+ *
+ Heading 2 
+ Text to be displayed
+ *
+and so on. Heading an a text are sandwiched between two * 
+"""
+
+def Text2DictForLayout(textfilepath):
+    fo = open(textfilepath, 'r')
+    a = []
+    for i, line in enumerate(fo.readlines()):
+        if line.startswith('*'):
+            a.append(i)
+    Text = {}
+    fo.seek(0)
+    b = fo.read().splitlines()
+    for i in range(len(a) - 1):
+        fo.seek(0)
+        TextInsideAsList = b[a[i] + 2:a[i + 1]]
+        Breaks = IndicesinList(TextInsideAsList, 'html.Br()') #haha a bit complicated but serves the purpose
+        if len(Breaks) > 0:
+            Breaks = [0] + Breaks
+            JoinedSentencesAsList = []
+            for num, Break in enumerate(Breaks):
+                if num == 0:
+                    SentencesIndividuallyAsList = TextInsideAsList[Breaks[num]:Breaks[num + 1]]
+                    JoinedSentencesAsList.append(' '.join(SentencesIndividuallyAsList))
+                if (num != 0) & (num < len(Breaks) - 1):
+                    SentencesIndividuallyAsList = TextInsideAsList[Breaks[num] + 1:Breaks[num + 1]]
+                    JoinedSentencesAsList.append(' '.join(SentencesIndividuallyAsList))
+                if num == len(Breaks) - 1:
+                    SentencesIndividuallyAsList = TextInsideAsList[Breaks[num] + 1:]
+                    JoinedSentencesAsList.append(' '.join(SentencesIndividuallyAsList))
+            Paragraph = []
+            for num, Sentence in enumerate(JoinedSentencesAsList):
+                if num == 0:
+                    Paragraph = Paragraph + [Sentence]
+                else:
+                    Paragraph = Paragraph + [html.Br()] + [Sentence]
+        else:
+            Paragraph = TextInsideAsList
+
+        Text[b[a[i] + 1]] = Paragraph
+    fo.close()
+
+    return Text
